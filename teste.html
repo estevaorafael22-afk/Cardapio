@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍕 Cardápio Pizzaria</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f8f8f8; }
+  h1 { color: #d35400; }
+  .category { margin-bottom: 30px; }
+  .item-card {
+    display: flex; align-items: center; background: #fff;
+    padding: 10px; border-radius: 10px; margin-bottom: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: 0.2s;
+  }
+  .item-card img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 10px; }
+  .item-card div { flex: 1; }
+  .item-card strong { display:block; margin-bottom:5px; }
+  .highlight { border: 2px solid #27ae60; }
+  .qtd-control { display:flex; align-items:center; gap:5px; margin-top:5px; }
+  .qtd-control button {
+    width:25px; height:25px; border:none; border-radius:5px; background:#d35400;
+    color:#fff; font-weight:bold; cursor:pointer;
+  }
+  .total { font-size: 1.4em; font-weight: bold; margin-top: 20px; }
+  #pagamentoBtns { display:flex; gap:10px; margin-top:10px; }
+  .pag-btn {
+    flex:1; padding:10px; border:2px solid #ccc; border-radius:5px;
+    cursor:pointer; background:#fff; font-size:1em; transition:0.2s;
+  }
+  .pag-btn.selected { border-color:#27ae60; background:#eafaf1; }
+  button#finalizar {
+    margin-top:20px; padding:12px; font-size:1.1em; background:#27ae60;
+    color:#fff; border:none; border-radius:8px; cursor:pointer; width:100%;
+  }
+  .cliente-info { background:#fff; padding:15px; border-radius:8px; margin-top:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+  .cliente-info label { display:block; margin-bottom:10px; font-weight:bold; }
+  .cliente-info input { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:5px; }
+</style>
+</head>
+<body>
+
+<h1>🍕 Cardápio Pizzaria Interativo</h1>
+
+<!-- PRODUTOS -->
+<div class="category">
+  <h2>Pizzas</h2>
+  <div class="item-card">
+    <img src="https://www.galbani.com.br/wp-content/uploads/2024/11/Pizza-marguerita.webp" alt="Margherita">
+    <div>
+      <strong>Pizza Margherita</strong>
+      <label>Tamanho:
+        <select class="tamanho" onchange="atualizarPreco(this)">
+          <option value="25">Média - R$25,00</option>
+          <option value="38">Grande - R$38,00</option>
+        </select>
+      </label>
+      <div class="qtd-control">
+        <button onclick="alterarQuantidade(this,-1)">-</button>
+        <input type="number" min="0" value="0" data-price="25" readonly>
+        <button onclick="alterarQuantidade(this,1)">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="category">
+  <h2>Bebidas</h2>
+  <div class="item-card">
+    <img src="https://www.imigrantesbebidas.com.br/bebida/images/products/full/4614-refrigerante-guarana-antarctica-1l.jpg" alt="Coca-Cola">
+    <div>
+      <strong>Coca-Cola 350ml - R$5,00</strong>
+      <div class="qtd-control">
+        <button onclick="alterarQuantidade(this,-1)">-</button>
+        <input type="number" min="0" value="0" data-price="5" readonly>
+        <button onclick="alterarQuantidade(this,1)">+</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGAMENTO -->
+<div class="category">
+  <h2>Pagamento</h2>
+  <div id="pagamentoBtns">
+    <button class="pag-btn selected" data-pag="Dinheiro" onclick="selecionarPagamento(this)">💵 Dinheiro</button>
+    <button class="pag-btn" data-pag="Cartão" onclick="selecionarPagamento(this)">💳 Cartão</button>
+    <button class="pag-btn" data-pag="Pix" onclick="selecionarPagamento(this)">📲 Pix</button>
+  </div>
+
+  <!-- Troco -->
+  <div id="trocoDiv" style="display:none; margin-top:10px;">
+    <label>Vai precisar de troco?</label>
+    <select id="trocoSelect" onchange="verificarTroco()">
+      <option value="nao">Não</option>
+      <option value="sim">Sim</option>
+    </select>
+    <div id="valorTrocoDiv" style="display:none; margin-top:5px;">
+      <label>Valor do troco: R$ <input type="number" id="valorTroco" min="0" step="0.01" placeholder="Ex: 50,00"></label>
+    </div>
+  </div>
+
+  <!-- Pix -->
+  <div id="pixDiv" style="display:none; margin-top:10px; text-align:center;">
+    <p>Pix da empresa:</p>
+    <img src="https://i.imgur.com/SEUQRCODE.png" alt="QR Code Pix" style="width:180px;">
+    <p>ou use a chave: <strong>chavepix@empresa.com</strong></p>
+    <button onclick="copiarPix()">Copiar chave Pix</button>
+  </div>
+</div>
+
+<!-- ENTREGA -->
+<div class="category">
+  <h2>Entrega ou Retirada</h2>
+  <select id="entregaRetirada" onchange="toggleBairro()">
+    <option value="retirada">Retirada (Sem taxa)</option>
+    <option value="entrega">Entrega (Taxa por bairro)</option>
+  </select>
+  
+  <div id="bairroDiv" style="display:none; margin-top:10px;">
+    <label>Escolha o bairro:</label>
+    <select id="bairro" onchange="calcularTotal()">
+      <option value="5">27 de Novembro - R$5,00</option>
+      <option value="15">Aeroporto - R$15,00</option>
+      <option value="17">Aflitos - R$17,00</option>
+    </select>
+  </div>
+</div>
+
+<!-- DADOS DO CLIENTE -->
+<div class="cliente-info">
+  <h2>Dados do Cliente</h2>
+  <label>Nome:
+    <input type="text" id="nomeCliente" placeholder="Digite seu nome">
+  </label>
+  <label>Endereço:
+    <input type="text" id="enderecoCliente" placeholder="Rua, número, complemento">
+  </label>
+</div>
+
+<div class="total" id="total">Total: R$0,00</div>
+<button id="finalizar" onclick="enviarPedido()">📲 Finalizar Pedido no WhatsApp</button>
+
+<script>
+function alterarQuantidade(btn, delta) {
+  const input = btn.parentElement.querySelector('input');
+  let valor = parseInt(input.value) + delta;
+  if(valor < 0) valor = 0;
+  input.value = valor;
+  const card = btn.closest('.item-card');
+  if(valor > 0) card.classList.add('highlight');
+  else card.classList.remove('highlight');
+  calcularTotal();
+}
+
+function atualizarPreco(select) {
+  const card = select.closest('.item-card');
+  const input = card.querySelector('input');
+  input.dataset.price = select.value;
+  calcularTotal();
+}
+
+function toggleBairro() {
+  const entregaRetirada = document.getElementById('entregaRetirada').value;
+  document.getElementById('bairroDiv').style.display = entregaRetirada === 'entrega' ? 'block' : 'none';
+  calcularTotal();
+}
+
+function selecionarPagamento(btn) {
+  document.querySelectorAll('.pag-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const pag = btn.dataset.pag;
+  document.getElementById('trocoDiv').style.display = pag === 'Dinheiro' ? 'block' : 'none';
+  document.getElementById('valorTrocoDiv').style.display = 'none';
+  document.getElementById('trocoSelect').value = 'nao';
+  document.getElementById('pixDiv').style.display = pag === 'Pix' ? 'block' : 'none';
+}
+
+function verificarTroco() {
+  const troco = document.getElementById('trocoSelect').value;
+  document.getElementById('valorTrocoDiv').style.display = troco === 'sim' ? 'block' : 'none';
+}
+
+function copiarPix() {
+  const pix = "chavepix@empresa.com";
+  navigator.clipboard.writeText(pix);
+  alert("Chave Pix copiada!");
+}
+
+function calcularTotal() {
+  let total = 0;
+  document.querySelectorAll('.item-card input[type="number"]').forEach(input => {
+    total += parseFloat(input.value) * parseFloat(input.dataset.price);
+  });
+  if(document.getElementById('entregaRetirada').value === 'entrega') {
+    total += parseFloat(document.getElementById('bairro').value);
+  }
+  document.getElementById('total').innerText = 'Total: R$' + total.toFixed(2).replace('.', ',');
+}
+
+function enviarPedido() {
+  let mensagem = '📋 *Pedido Pizzaria*\n\n';
+  document.querySelectorAll('.item-card').forEach(card => {
+    const nome = card.querySelector('strong').innerText;
+    const input = card.querySelector('input');
+    const qtd = parseInt(input.value);
+    if(qtd > 0) {
+      const tamanhoSelect = card.querySelector('select.tamanho');
+      const tamanho = tamanhoSelect ? tamanhoSelect.options[tamanhoSelect.selectedIndex].text.split(' - ')[0] : '';
+      mensagem += `- ${nome}${tamanho ? ' ('+tamanho+')' : ''}: ${qtd} x R$${input.dataset.price.replace('.', ',')}\n`;
+    }
+  });
+
+  // Pagamento
+  const pagamento = document.querySelector('.pag-btn.selected').dataset.pag;
+  mensagem += `\nForma de pagamento: ${pagamento}\n`;
+  if(pagamento === 'Dinheiro' && document.getElementById('trocoSelect').value === 'sim') {
+    const valorTroco = parseFloat(document.getElementById('valorTroco').value || 0);
+    mensagem += `Necessário troco para: R$${valorTroco.toFixed(2).replace('.', ',')}\n`;
+  }
+
+  // Entrega ou retirada
+  const entregaRetirada = document.getElementById('entregaRetirada').value;
+  mensagem += `Tipo: ${entregaRetirada === 'entrega' ? 'Entrega' : 'Retirada'}\n`;
+  if(entregaRetirada === 'entrega') {
+    const bairro = document.getElementById('bairro');
+    mensagem += `Bairro: ${bairro.options[bairro.selectedIndex].text.split(' - ')[0]}\n`;
+  }
+
+  // Dados do cliente
+  const nomeCliente = document.getElementById('nomeCliente').value;
+  const enderecoCliente = document.getElementById('enderecoCliente').value;
+  mensagem += `\n👤 Cliente: ${nomeCliente || 'Não informado'}\n`;
+  mensagem += `📍 Endereço: ${enderecoCliente || 'Não informado'}\n`;
+
+  // Total
+  const total = document.getElementById('total').innerText.split('R$')[1];
+  mensagem += `\n*Total: R$${total}*`;
+
+  // WhatsApp
+  const numero = '5581984297695'; // substitua pelo seu número
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+  window.open(url, '_blank');
+}
+</script>
+
+</body>
+</html>
